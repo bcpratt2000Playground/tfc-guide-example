@@ -1,24 +1,45 @@
-provider "aws" {
-  version = "2.33.0"
 
-  region = var.aws_region
+// Configure the Google Cloud provider
+provider "google" {
+ credentials = file("CREDENTIALS_FILE.json")
+ project     = "main-257719 "
+ region      = "us-west3"
 }
 
-provider "random" {
-  version = "2.2"
-}
+//configure test vm instance
+resource "google_compute_instance" "default" {
+  name         = "terraformtest"
+  machine_type = "e2-micro"
+  zone         = "us-west3-a"
 
-resource "random_pet" "table_name" {}
+  tags = ["terraform", "testing"]
 
-resource "aws_dynamodb_table" "tfc_example_table" {
-  name = "${var.db_table_name}-${random_pet.table_name.id}"
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-9"
+    }
+  }
 
-  read_capacity  = var.db_read_capacity
-  write_capacity = var.db_write_capacity
-  hash_key       = "UUID"
+  // Local SSD disk
+  scratch_disk {
+    interface = "SCSI"
+  }
 
-  attribute {
-    name = "UUID"
-    type = "S"
+  network_interface {
+    network = "default"
+
+    access_config {
+      // Ephemeral IP
+    }
+  }
+
+  metadata = {
+    foo = "bar"
+  }
+
+  metadata_startup_script = "echo hi > /test.txt"
+
+  service_account {
+    scopes = ["userinfo-email", "compute-ro", "storage-ro"]
   }
 }
